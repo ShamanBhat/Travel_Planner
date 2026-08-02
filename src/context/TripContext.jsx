@@ -17,6 +17,12 @@ export function TripProvider({ children }) {
 
   useEffect(() => {
     if (!tripId) return
+    if (!db) {
+      setError('Firebase is not configured yet.')
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     // Single onSnapshot listener for the trip "shell" doc (name, dates, members,
     // cover photo, trip code). Module data (logistics/itinerary/etc.) is
