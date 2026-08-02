@@ -2,6 +2,8 @@
 import React, { useState } from 'react'
 import { Plus, Trash2, Tag } from 'lucide-react'
 
+const CATEGORY_OPTIONS = ['Clothing', 'Toiletries', 'Electronics', 'Documents', 'Essentials', 'Outdoor', 'Health', 'Other']
+
 function groupByCategory(items) {
   const groups = {}
   items.forEach((item) => {
@@ -14,14 +16,25 @@ function groupByCategory(items) {
 
 export default function SharedPackingList({ items, editable, selected, onToggleSelect, onAdd, onDelete }) {
   const [draftItem, setDraftItem] = useState('')
-  const [draftCategory, setDraftCategory] = useState('')
+  const [draftCategory, setDraftCategory] = useState('Clothing')
+  const [customCategory, setCustomCategory] = useState('')
+  const [showCustomCategory, setShowCustomCategory] = useState(false)
 
   function submitAdd(e) {
     e.preventDefault()
     if (!draftItem.trim()) return
-    onAdd({ item: draftItem.trim(), category: draftCategory.trim() || 'Other' })
+
+    const category = showCustomCategory
+      ? customCategory.trim() || 'Other'
+      : draftCategory || 'Other'
+
+    const entries = draftItem
+      .split(/[,\n]+/)
+      .map((entry) => entry.trim())
+      .filter(Boolean)
+
+    entries.forEach((entry) => onAdd({ item: entry, category }))
     setDraftItem('')
-    setDraftCategory('')
   }
 
   const groups = groupByCategory(items)
@@ -73,25 +86,50 @@ export default function SharedPackingList({ items, editable, selected, onToggleS
       )}
 
       {editable && (
-        <form onSubmit={submitAdd} className="mt-4 pt-3 border-t border-app-border flex gap-2">
+        <form onSubmit={submitAdd} className="mt-4 pt-3 border-t border-app-border flex flex-col gap-2">
           <input
             value={draftItem}
             onChange={(e) => setDraftItem(e.target.value)}
             placeholder="Item name"
-            className="flex-1 rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-sm text-app-text"
+            className="w-full rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-sm text-app-text"
           />
-          <input
-            value={draftCategory}
-            onChange={(e) => setDraftCategory(e.target.value)}
-            placeholder="Category"
-            className="w-28 rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-sm text-app-text"
-          />
-          <button
-            type="submit"
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-app-primary text-app-primaryText text-sm hover:brightness-110"
-          >
-            <Plus size={14} />
-          </button>
+          <div className="flex gap-2">
+            <select
+              value={showCustomCategory ? 'Other' : draftCategory}
+              onChange={(e) => {
+                const value = e.target.value
+                if (value === 'Other') {
+                  setShowCustomCategory(true)
+                  setDraftCategory('Other')
+                } else {
+                  setShowCustomCategory(false)
+                  setDraftCategory(value)
+                  setCustomCategory('')
+                }
+              }}
+              className="w-36 rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-sm text-app-text"
+            >
+              {CATEGORY_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            {showCustomCategory && (
+              <input
+                value={customCategory}
+                onChange={(e) => setCustomCategory(e.target.value)}
+                placeholder="Custom category"
+                className="flex-1 rounded-lg border border-app-border bg-app-bg px-2.5 py-1.5 text-sm text-app-text"
+              />
+            )}
+            <button
+              type="submit"
+              className="flex items-center justify-center px-3 py-1.5 rounded-lg bg-app-primary text-app-primaryText text-sm hover:brightness-110"
+            >
+              <Plus size={14} />
+            </button>
+          </div>
         </form>
       )}
     </div>

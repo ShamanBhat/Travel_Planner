@@ -57,7 +57,12 @@ export default function PackingLists() {
   }
 
   function addSharedItem({ item, category }) {
-    persistShared([...sharedItems, { id: newId('shared'), item, category, assignedToUid: null }])
+    const newItem = { id: newId('shared'), item, category, assignedToUid: null }
+    setSharedItems((prev) => {
+      const next = [...prev, newItem]
+      persistShared(next)
+      return next
+    })
   }
   function deleteSharedItem(target) {
     persistShared(sharedItems.filter((i) => i.id !== target.id))
@@ -69,10 +74,18 @@ export default function PackingLists() {
   }
 
   function addPersonalItem(text) {
-    persistPersonal([
-      ...personalItems,
-      { id: newId('personal'), item: text, category: 'Other', isPacked: false, importedFromShared: false },
-    ])
+    const newItem = {
+      id: newId('personal'),
+      item: text,
+      category: 'Other',
+      isPacked: false,
+      importedFromShared: false,
+    }
+    setPersonalItems((prev) => {
+      const next = [...prev, newItem]
+      persistPersonal(next)
+      return next
+    })
   }
   function togglePersonalItem(target) {
     persistPersonal(
