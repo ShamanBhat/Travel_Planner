@@ -18,6 +18,12 @@ export function AuthProvider({ children }) {
   const [authLoading, setAuthLoading] = useState(true)
 
   useEffect(() => {
+    if (!auth) {
+      setCurrentUser(null)
+      setAuthLoading(false)
+      return
+    }
+
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
       setAuthLoading(false)
@@ -27,7 +33,7 @@ export function AuthProvider({ children }) {
 
   // Upsert a lightweight user profile doc, used for lookups / denormalized display data.
   async function upsertUserDoc(user) {
-    if (!user) return
+    if (!user || !db) return
     await setDoc(
       doc(db, 'users', user.uid),
       {
@@ -42,6 +48,10 @@ export function AuthProvider({ children }) {
   }
 
   async function signup(email, password, displayName) {
+    if (!auth) {
+      throw new Error('Firebase is not configured yet.')
+    }
+
     const cred = await createUserWithEmailAndPassword(auth, email, password)
     if (displayName) {
       await updateProfile(cred.user, { displayName })
@@ -51,18 +61,27 @@ export function AuthProvider({ children }) {
   }
 
   async function login(email, password) {
+    if (!auth) {
+      throw new Error('Firebase is not configured yet.')
+    }
+
     const cred = await signInWithEmailAndPassword(auth, email, password)
     await upsertUserDoc(cred.user)
     return cred.user
   }
 
   async function loginWithGoogle() {
+    if (!auth || !googleProvider) {
+      throw new Error('Firebase is not configured yet.')
+    }
+
     const cred = await signInWithPopup(auth, googleProvider)
     await upsertUserDoc(cred.user)
     return cred.user
   }
 
   function logout() {
+    if (!auth) return Promise.resolve()
     return signOut(auth)
   }
 
