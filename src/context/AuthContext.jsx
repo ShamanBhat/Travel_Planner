@@ -13,6 +13,19 @@ import { auth, googleProvider, db } from '../firebase'
 
 const AuthContext = createContext(null)
 
+export function getPreferredDisplayName(user) {
+  return (
+    user?.displayName ||
+    user?.providerData?.find((profile) => profile.displayName)?.displayName ||
+    user?.email?.split('@')[0] ||
+    'Traveler'
+  )
+}
+
+export function getPreferredEmail(user) {
+  return user?.email || user?.providerData?.find((profile) => profile.email)?.email || ''
+}
+
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -27,6 +40,9 @@ export function AuthProvider({ children }) {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user)
       setAuthLoading(false)
+      if (user) {
+        void upsertUserDoc(user)
+      }
     })
     return unsubscribe
   }, [])
@@ -38,8 +54,8 @@ export function AuthProvider({ children }) {
       doc(db, 'users', user.uid),
       {
         uid: user.uid,
-        email: user.email,
-        displayName: user.displayName || user.email?.split('@')[0] || 'Traveler',
+        email: getPreferredEmail(user),
+        displayName: getPreferredDisplayName(user),
         photoURL: user.photoURL || null,
         updatedAt: serverTimestamp(),
       },

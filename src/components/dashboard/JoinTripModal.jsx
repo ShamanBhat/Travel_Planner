@@ -4,7 +4,7 @@ import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/fire
 import { Loader2 } from 'lucide-react'
 import Modal from '../common/Modal'
 import { db } from '../../firebase'
-import { useAuth } from '../../context/AuthContext'
+import { getPreferredDisplayName, getPreferredEmail, useAuth } from '../../context/AuthContext'
 import { ROLES } from '../../utils/rbac'
 
 export default function JoinTripModal({ open, onClose }) {
@@ -51,8 +51,8 @@ export default function JoinTripModal({ open, onClose }) {
         [`members.${currentUser.uid}`]: {
           role: ROLES.VIEWER,
           status: 'pending',
-          displayName: currentUser.displayName || currentUser.email,
-          email: currentUser.email,
+          displayName: getPreferredDisplayName(currentUser),
+          email: getPreferredEmail(currentUser),
           photoURL: currentUser.photoURL || null,
           joinedAt: new Date().toISOString(),
         },

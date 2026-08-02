@@ -4,7 +4,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore'
 import { Loader2, MapPin, Search } from 'lucide-react'
 import Modal from '../common/Modal'
 import { db } from '../../firebase'
-import { useAuth } from '../../context/AuthContext'
+import { getPreferredDisplayName, getPreferredEmail, useAuth } from '../../context/AuthContext'
 import { generateTripCode } from '../../utils/tripCode'
 import { geocodeDestination } from '../../utils/weather'
 import { ROLES } from '../../utils/rbac'
@@ -81,8 +81,8 @@ export default function CreateTripModal({ open, onClose, onCreated }) {
           [currentUser.uid]: {
             role: ROLES.ADMIN,
             status: 'approved',
-            displayName: currentUser.displayName || currentUser.email,
-            email: currentUser.email,
+            displayName: getPreferredDisplayName(currentUser),
+            email: getPreferredEmail(currentUser),
             photoURL: currentUser.photoURL || null,
             joinedAt: new Date().toISOString(),
           },

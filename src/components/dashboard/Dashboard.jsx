@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore'
 import { Plus, KeyRound, MapPin, Calendar, Clock3, Mail, Check, X } from 'lucide-react'
 import { db } from '../../firebase'
-import { useAuth } from '../../context/AuthContext'
+import { getPreferredDisplayName, getPreferredEmail, useAuth } from '../../context/AuthContext'
 import NavBar from '../layout/NavBar'
 import CreateTripModal from './CreateTripModal'
 import JoinTripModal from './JoinTripModal'
@@ -62,8 +62,8 @@ export default function Dashboard() {
       [`members.${currentUser.uid}`]: {
         role: invite.role || ROLES.VIEWER,
         status: 'approved',
-        displayName: currentUser.displayName || currentUser.email,
-        email: currentUser.email,
+        displayName: getPreferredDisplayName(currentUser),
+        email: getPreferredEmail(currentUser),
         photoURL: currentUser.photoURL || null,
         joinedAt: new Date().toISOString(),
       },
