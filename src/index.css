@@ -8,104 +8,119 @@
   }
 
   body {
-    @apply min-h-screen font-sans transition-colors duration-300;
+    min-height: 100vh;
+    font-family: Inter, system-ui, sans-serif;
+    transition: background 0.3s ease, color 0.3s ease;
+    background-position: top center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 
-  /* Light theme (default) */
   body.theme-light {
-    @apply bg-slate-50 text-slate-900;
+    background: radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 25%),
+      radial-gradient(circle at 80% 0%, rgba(56,189,248,0.12), transparent 22%),
+      #f8fafc;
+    color: #0f172a;
   }
 
-  /* Dark theme */
   body.theme-dark {
-    @apply bg-slate-900 text-slate-100;
+    background: radial-gradient(circle at top left, rgba(59,130,246,0.15), transparent 25%),
+      linear-gradient(180deg, #020617 0%, #111827 100%);
+    color: #f8fafc;
   }
 
-  /* Outdoor / Trek theme */
   body.theme-outdoor {
-    @apply bg-trek-cream text-trek-bark;
+    background: radial-gradient(circle at top left, rgba(34,197,94,0.12), transparent 20%),
+      #f6f5ef;
+    color: #2c2a22;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    backdrop-filter: blur(1px);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  ::selection {
+    background: rgba(59,130,246,0.25);
+    color: inherit;
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-xl border p-4 shadow-sm transition-colors;
-  }
-
-  .theme-light .card {
-    @apply border-slate-200 bg-white;
+    @apply rounded-3xl border border-slate-200/80 bg-white/90 p-6 shadow-2xl shadow-slate-900/10 transition-all duration-300;
   }
 
   .theme-dark .card {
-    @apply border-slate-700 bg-slate-800;
+    @apply border-slate-700/70 bg-slate-900/85;
   }
 
   .theme-outdoor .card {
-    @apply border-trek-earth/30 bg-white/80;
+    @apply border-trek-earth/40 bg-white/80;
   }
 
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold shadow-lg shadow-slate-900/10 transition duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-[0.98];
   }
 
   .theme-light .btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500/30;
   }
 
   .theme-dark .btn-primary {
-    @apply bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-400;
+    @apply bg-blue-500 text-white hover:bg-blue-400 focus:ring-blue-400/30;
   }
 
   .theme-outdoor .btn-primary {
-    @apply bg-trek-moss text-white hover:bg-trek-sage focus:ring-trek-sage;
+    @apply bg-emerald-600 text-white hover:bg-emerald-700 focus:ring-emerald-500/30;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
-  }
-
-  .theme-light .btn-secondary {
-    @apply border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-400;
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-slate-300/80 bg-white/80 px-5 py-3 text-sm font-medium text-slate-700 shadow-sm shadow-slate-900/5 transition duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 hover:bg-slate-100 active:scale-[0.98];
   }
 
   .theme-dark .btn-secondary {
-    @apply border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600 focus:ring-slate-500;
+    @apply border-slate-600/70 bg-slate-800/80 text-slate-200 hover:bg-slate-700;
   }
 
   .theme-outdoor .btn-secondary {
-    @apply border-trek-earth/40 bg-trek-cream text-trek-bark hover:bg-white focus:ring-trek-sage;
+    @apply border-trek-earth/40 bg-white/80 text-trek-bark hover:bg-slate-50;
   }
 
   .input-field {
-    @apply w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2;
-  }
-
-  .theme-light .input-field {
-    @apply border-slate-300 bg-white text-slate-900 focus:border-blue-500 focus:ring-blue-500/20;
+    @apply w-full rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-3 text-sm text-slate-900 shadow-sm shadow-slate-900/5 transition duration-200 ease-out focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20;
   }
 
   .theme-dark .input-field {
-    @apply border-slate-600 bg-slate-700 text-slate-100 focus:border-blue-400 focus:ring-blue-400/20;
+    @apply border-slate-700/80 bg-slate-900/90 text-slate-100 focus:border-blue-400 focus:ring-blue-400/20;
   }
 
   .theme-outdoor .input-field {
-    @apply border-trek-earth/40 bg-white text-trek-bark focus:border-trek-moss focus:ring-trek-sage/20;
+    @apply border-trek-earth/40 bg-white/90 text-trek-bark focus:border-trek-moss focus:ring-trek-sage/20;
   }
 
   .tab-active {
-    @apply font-semibold;
-  }
-
-  .theme-light .tab-active {
-    @apply border-b-2 border-blue-600 text-blue-600;
+    @apply bg-slate-900 text-white shadow-lg shadow-slate-900/10 border border-transparent;
   }
 
   .theme-dark .tab-active {
-    @apply border-b-2 border-blue-400 text-blue-400;
+    @apply bg-slate-100/10 text-white;
   }
 
   .theme-outdoor .tab-active {
-    @apply border-b-2 border-trek-moss text-trek-moss;
+    @apply bg-emerald-600/10 text-emerald-700;
+  }
+
+  .btn-primary,
+  .btn-secondary {
+    @apply transition-transform duration-150 ease-out;
   }
 }
 

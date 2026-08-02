@@ -35,12 +35,14 @@ export default function Header({ activeTab, onTabChange, onSettings, onMembers }
   const role = getMemberRole();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-inherit bg-inherit/95 backdrop-blur no-print">
+    <header className="sticky top-0 z-40 border-b border-slate-200/70 bg-white/75 backdrop-blur-xl transition-colors duration-300 dark:border-slate-800/70 dark:bg-slate-950/75 no-print">
       <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-2">
-          <span className="text-lg font-bold">✈ Travel Planner</span>
+        <div className="flex items-center gap-3">
+          <span className="rounded-full bg-slate-100/80 px-3 py-1 text-lg font-bold tracking-tight text-slate-900 shadow-sm shadow-slate-900/5 dark:bg-slate-800/80 dark:text-slate-100">
+            ✈ Travel Planner
+          </span>
           {role && (
-            <span className="rounded-full bg-inherit px-2 py-0.5 text-xs opacity-60 border border-inherit">
+            <span className="rounded-full border border-slate-200/70 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600 shadow-sm shadow-slate-900/5 dark:border-slate-700/70 dark:bg-slate-900/70 dark:text-slate-300">
               {roleLabel(role)}
             </span>
           )}
@@ -64,13 +66,15 @@ export default function Header({ activeTab, onTabChange, onSettings, onMembers }
       </div>
 
       <nav className="mx-auto max-w-4xl overflow-x-auto px-4">
-        <div className="flex gap-1 pb-0">
+        <div className="flex gap-2 pb-0">
           {TABS.map(({ id, label, icon: Icon }) => (
             <button
               key={id}
               onClick={() => onTabChange(id)}
-              className={`flex shrink-0 items-center gap-1.5 px-3 py-2.5 text-sm font-medium transition-colors ${
-                activeTab === id ? 'tab-active' : 'opacity-60 hover:opacity-100'
+              className={`flex shrink-0 items-center gap-1.5 rounded-full border border-transparent px-4 py-2.5 text-sm font-medium transition duration-200 ${
+                activeTab === id
+                  ? 'tab-active'
+                  : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800/70'
               }`}
             >
               <Icon size={16} />

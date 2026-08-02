@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getCountdown, getTripStatus, formatDate } from '../utils/dates';
+import { getCountdown, getTripStatus, formatDate } from '../../utils/dates';
 
 export default function CountdownTimer({ startDate, endDate }) {
   const [countdown, setCountdown] = useState(getCountdown(startDate));

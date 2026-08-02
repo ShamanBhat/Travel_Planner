@@ -34,13 +34,20 @@ export function formatTime(isoStr) {
   return d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
 }
 
+function toLocalDateString(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function getDateRange(startDate, endDate) {
   if (!startDate || !endDate) return [];
   const dates = [];
   const current = new Date(startDate + 'T00:00:00');
   const end = new Date(endDate + 'T00:00:00');
   while (current <= end) {
-    dates.push(current.toISOString().split('T')[0]);
+    dates.push(toLocalDateString(current));
     current.setDate(current.getDate() + 1);
   }
   return dates;
