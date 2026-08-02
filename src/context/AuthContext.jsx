@@ -8,7 +8,7 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from 'firebase/auth'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, doc, getDocs, query, setDoc, serverTimestamp, where } from 'firebase/firestore'
 import { auth, googleProvider, db } from '../firebase'
 
 const AuthContext = createContext(null)
@@ -50,16 +50,35 @@ export function AuthProvider({ children }) {
   // Upsert a lightweight user profile doc, used for lookups / denormalized display data.
   async function upsertUserDoc(user) {
     if (!user || !db) return
-    await setDoc(
-      doc(db, 'users', user.uid),
-      {
-        uid: user.uid,
-        email: getPreferredEmail(user),
-        displayName: getPreferredDisplayName(user),
-        photoURL: user.photoURL || null,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
+
+    const profile = {
+      uid: user.uid,
+      email: getPreferredEmail(user),
+      displayName: getPreferredDisplayName(user),
+      photoURL: user.photoURL || null,
+      updatedAt: serverTimestamp(),
+    }
+
+    await setDoc(doc(db, 'users', user.uid), profile, { merge: true })
+
+    const tripsRef = collection(db, 'trips')
+    const memberTripsQuery = query(tripsRef, where(`members.${user.uid}.status`, 'in', ['approved', 'pending']))
+    const tripsSnap = await getDocs(memberTripsQuery)
+
+    await Promise.all(
+      tripsSnap.docs.map((tripDoc) =>
+        setDoc(
+          doc(db, 'trips', tripDoc.id),
+          {
+            [`members.${user.uid}`]: {
+              ...(tripDoc.data().members?.[user.uid] || {}),
+              ...profile,
+              joinedAt: tripDoc.data().members?.[user.uid]?.joinedAt || new Date().toISOString(),
+            },
+          },
+          { merge: true }
+        )
+      )
     )
   }
 
