@@ -100,7 +100,7 @@ export default function ExpenseTracker() {
         <div className="rounded-2xl border border-app-border bg-app-surface p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-app-text">Group (shared) expenses</h2>
-            <span className="text-sm font-semibold text-app-text">${sharedTotal.toFixed(2)}</span>
+            <span className="text-sm font-semibold text-app-text">₹{sharedTotal.toFixed(2)}</span>
           </div>
           <ExpenseList
             expenses={sharedExpenses}
@@ -121,7 +121,7 @@ export default function ExpenseTracker() {
         <div className="rounded-2xl border border-app-border bg-app-surface p-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-sm font-semibold text-app-text">My personal expenses</h2>
-            <span className="text-sm font-semibold text-app-text">${personalTotal.toFixed(2)}</span>
+            <span className="text-sm font-semibold text-app-text">₹{personalTotal.toFixed(2)}</span>
           </div>
           <ExpenseList
             expenses={personalExpenses}

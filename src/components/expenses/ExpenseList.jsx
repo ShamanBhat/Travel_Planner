@@ -21,7 +21,7 @@ export default function ExpenseList({ expenses, memberName, canDelete, onDelete,
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <span className="font-semibold text-app-text">${Number(exp.amount).toFixed(2)}</span>
+            <span className="font-semibold text-app-text">₹{Number(exp.amount).toFixed(2)}</span>
             {(canDelete === true || (typeof canDelete === 'function' && canDelete(exp))) && (
               <button
                 onClick={() => onDelete(exp)}

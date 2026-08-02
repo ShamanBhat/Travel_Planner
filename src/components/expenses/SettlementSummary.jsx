@@ -16,7 +16,7 @@ export default function SettlementSummary({ settlements, memberName }) {
           <span className="flex items-center gap-1.5 text-app-text">
             {memberName(s.fromUid)} <ArrowRight size={13} className="text-app-muted" /> {memberName(s.toUid)}
           </span>
-          <span className="font-semibold text-app-primary">${s.amount.toFixed(2)}</span>
+          <span className="font-semibold text-app-primary">₹{s.amount.toFixed(2)}</span>
         </li>
       ))}
     </ul>
