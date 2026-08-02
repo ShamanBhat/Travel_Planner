@@ -100,8 +100,8 @@ export default function MembersPanel() {
             {pendingMembers.map((m) => (
               <li key={m.uid} className="flex items-center justify-between gap-2 bg-app-surface rounded-lg px-3 py-2 border border-app-border">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-app-text truncate">{m.displayName}</p>
-                  <p className="text-xs text-app-muted truncate">{m.email}</p>
+                  <p className="text-sm font-medium text-app-text truncate">{m.displayName || m.email || 'Traveler'}</p>
+                  <p className="text-xs text-app-muted truncate">{m.email || 'No email available'}</p>
                 </div>
                 <div className="flex gap-1.5 shrink-0">
                   <button
@@ -180,12 +180,12 @@ export default function MembersPanel() {
                 )}
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-app-text truncate flex items-center gap-1.5">
-                    {m.displayName}
+                    {m.displayName || m.email || 'Traveler'}
                     {m.uid === trip.createdBy && (
                       <ShieldCheck size={12} className="text-app-primary" title="Trip creator" />
                     )}
                   </p>
-                  <p className="text-xs text-app-muted truncate">{m.email}</p>
+                  <p className="text-xs text-app-muted truncate">{m.email || 'No email available'}</p>
                 </div>
               </div>
 
