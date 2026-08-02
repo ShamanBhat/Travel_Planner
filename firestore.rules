@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function tripData(tripId) {
+      return get(/databases/$(database)/documents/trips/$(tripId)).data;
+    }
+
+    function membership(tripId) {
+      return tripData(tripId).members[request.auth.uid];
+    }
+
+    function isApprovedMember(tripId) {
+      return isSignedIn() &&
+        tripId != null &&
+        exists(/databases/$(database)/documents/trips/$(tripId)) &&
+        membership(tripId) != null &&
+        membership(tripId).status == 'approved';
+    }
+
+    function myRole(tripId) {
+      return membership(tripId).role;
+    }
+
+    function isAdmin(tripId) {
+      return isApprovedMember(tripId) && myRole(tripId) == 'admin';
+    }
+
+    function isEditor(tripId) {
+      return isApprovedMember(tripId) && (myRole(tripId) == 'admin' || myRole(tripId) == 'editor');
+    }
+
+    // Lightweight user profile docs, used for display data (name/photo/email).
+    match /users/{uid} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == uid;
+    }
+
+    // Direct email invitations. Anyone signed in may be invited; only the
+    // invited email (matched against the Auth token) can read/accept/decline
+    // their own invite. Creation is restricted to trip admins.
+    match /invites/{inviteId} {
+      allow read: if isSignedIn() && resource.data.email == request.auth.token.email;
+      allow create: if isSignedIn() && isAdmin(request.resource.data.tripId);
+      allow update, delete: if isSignedIn() && resource.data.email == request.auth.token.email;
+    }
+
+    match /trips/{tripId} {
+      // Any current member (approved or pending) can read the trip shell so
+      // the UI can show a "pending approval" screen.
+      allow read: if isSignedIn() && resource.data.members[request.auth.uid] != null;
+      allow create: if isSignedIn() && request.resource.data.createdBy == request.auth.uid;
+
+      // Admins can update anything. Any signed-in user may update ONLY their
+      // own membership entry (join request / self-service fields), which
+      // covers the "request to join with a trip code" flow.
+      allow update: if isSignedIn() && (
+        isAdmin(tripId) ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members']) &&
+          request.resource.data.members.diff(resource.data.members).affectedKeys().hasOnly([request.auth.uid])
+      );
+      allow delete: if isAdmin(tripId);
+
+      // Bundled single-document modules (cost-optimized: one doc per module).
+      match /logistics/{docId} {
+        allow read: if isApprovedMember(tripId);
+        allow write: if isEditor(tripId);
+      }
+      match /maps/{docId} {
+        allow read: if isApprovedMember(tripId);
+        allow write: if isEditor(tripId);
+      }
+      match /sharedPacking/{docId} {
+        allow read: if isApprovedMember(tripId);
+        allow write: if isEditor(tripId);
+      }
+
+      // One document per day, each bundling that day's itinerary items.
+      match /itinerary/{dayId} {
+        allow read: if isApprovedMember(tripId);
+        allow write: if isEditor(tripId);
+      }
+
+      // Private per-user packing list; only the owner (while an approved
+      // member) may read/write their own document.
+      match /personalPacking/{uid} {
+        allow read, write: if isSignedIn() && request.auth.uid == uid && isApprovedMember(tripId);
+      }
+
+      // Individual expense documents. Shared expenses are visible to the
+      // whole group; personal expenses are visible only to their owner.
+      // Query filters in the client MUST match these conditions (type / 
+      // visibilityUid) so Firestore can statically validate list queries.
+      match /expenses/{expenseId} {
+        allow read: if isApprovedMember(tripId) && (
+          resource.data.type == 'shared' ||
+          (resource.data.type == 'personal' && resource.data.visibilityUid == request.auth.uid)
+        );
+        allow create: if isApprovedMember(tripId) && (
+          (request.resource.data.type == 'shared' && isEditor(tripId)) ||
+          (request.resource.data.type == 'personal' && request.resource.data.visibilityUid == request.auth.uid)
+        );
+        allow update, delete: if isApprovedMember(tripId) && (
+          (resource.data.type == 'shared' && (isEditor(tripId) || resource.data.paidByUid == request.auth.uid)) ||
+          (resource.data.type == 'personal' && resource.data.visibilityUid == request.auth.uid)
+        );
+      }
+    }
+  }
+}

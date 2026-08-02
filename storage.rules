@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isApprovedMember(tripId) {
+      let tripDoc = firestore.get(/databases/(default)/documents/trips/$(tripId));
+      return isSignedIn() &&
+        tripDoc.data.members[request.auth.uid] != null &&
+        tripDoc.data.members[request.auth.uid].status == 'approved';
+    }
+
+    function myRole(tripId) {
+      let tripDoc = firestore.get(/databases/(default)/documents/trips/$(tripId));
+      return tripDoc.data.members[request.auth.uid].role;
+    }
+
+    function isEditor(tripId) {
+      return isApprovedMember(tripId) && (myRole(tripId) == 'admin' || myRole(tripId) == 'editor');
+    }
+
+    // Cover photos: any approved member can view; only admins/editors upload.
+    match /trips/{tripId}/cover/{fileName} {
+      allow read: if isApprovedMember(tripId);
+      allow write: if isEditor(tripId) && request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Boarding passes: any approved member can view (needed for the "My
+    // Boarding Pass" overlay); only admins/editors upload, scoped per-uid.
+    match /trips/{tripId}/boardingPasses/{uid}/{fileName} {
+      allow read: if isApprovedMember(tripId);
+      allow write: if isEditor(tripId) && request.resource.size < 10 * 1024 * 1024;
+    }
+  }
+}

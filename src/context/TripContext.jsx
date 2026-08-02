@@ -1,85 +1,81 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { db } from '../firebase';
-import { useAuth } from './AuthContext';
+// src/context/TripContext.jsx
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { doc, onSnapshot } from 'firebase/firestore'
+import { useParams } from 'react-router-dom'
+import { db } from '../firebase'
+import { useAuth } from './AuthContext'
+import { ROLES } from '../utils/rbac'
 
-const TripContext = createContext(null);
+const TripContext = createContext(null)
 
-export function TripProvider({ children, tripId }) {
-  const { user } = useAuth();
-  const [trip, setTrip] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export function TripProvider({ children }) {
+  const { tripId } = useParams()
+  const { currentUser } = useAuth()
+  const [trip, setTrip] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!tripId) {
-      setTrip(null);
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    const tripRef = doc(db, 'trips', tripId);
-    const unsubscribe = onSnapshot(
-      tripRef,
+    if (!tripId) return
+    setLoading(true)
+    // Single onSnapshot listener for the trip "shell" doc (name, dates, members,
+    // cover photo, trip code). Module data (logistics/itinerary/etc.) is
+    // subscribed to independently by the tab that is actually visible, per the
+    // cost-optimization guidance of only listening to what's on screen.
+    const unsub = onSnapshot(
+      doc(db, 'trips', tripId),
       (snap) => {
-        if (snap.exists()) {
-          setTrip({ tripId: snap.id, ...snap.data() });
-          setError(null);
+        if (!snap.exists()) {
+          setError('Trip not found.')
+          setTrip(null)
         } else {
-          setTrip(null);
-          setError('Trip not found');
+          setTrip({ id: snap.id, ...snap.data() })
+          setError(null)
         }
-        setLoading(false);
+        setLoading(false)
       },
       (err) => {
-        setError(err.message);
-        setLoading(false);
+        setError(err.message)
+        setLoading(false)
       }
-    );
+    )
+    return unsub
+  }, [tripId])
 
-    return unsubscribe;
-  }, [tripId]);
+  const membership = trip?.members?.[currentUser?.uid]
+  const role = membership?.status === 'approved' ? membership.role : null
+  const isPendingApproval = membership?.status === 'pending'
 
-  const getMemberRole = useCallback(() => {
-    if (!user || !trip?.members) return null;
-    const member = trip.members[user.uid];
-    if (!member || member.status !== 'approved') return null;
-    return member.role;
-  }, [user, trip]);
+  const members = useMemo(() => {
+    if (!trip?.members) return []
+    return Object.entries(trip.members).map(([uid, m]) => ({ uid, ...m }))
+  }, [trip])
 
-  const canEdit = useCallback(() => {
-    const role = getMemberRole();
-    return role === 'admin' || role === 'editor';
-  }, [getMemberRole]);
+  const approvedMembers = useMemo(
+    () => members.filter((m) => m.status === 'approved'),
+    [members]
+  )
+  const pendingMembers = useMemo(() => members.filter((m) => m.status === 'pending'), [members])
 
-  const isAdmin = useCallback(() => getMemberRole() === 'admin', [getMemberRole]);
+  const value = {
+    tripId,
+    trip,
+    loading,
+    error,
+    role: role || ROLES.VIEWER,
+    isMember: !!membership,
+    isApproved: membership?.status === 'approved',
+    isPendingApproval,
+    members,
+    approvedMembers,
+    pendingMembers,
+  }
 
-  const isApprovedMember = useCallback(() => {
-    if (!user || !trip?.members) return false;
-    return trip.members[user.uid]?.status === 'approved';
-  }, [user, trip]);
-
-  return (
-    <TripContext.Provider
-      value={{
-        trip,
-        tripId,
-        loading,
-        error,
-        getMemberRole,
-        canEdit,
-        isAdmin,
-        isApprovedMember,
-      }}
-    >
-      {children}
-    </TripContext.Provider>
-  );
+  return <TripContext.Provider value={value}>{children}</TripContext.Provider>
 }
 
 export function useTrip() {
-  const ctx = useContext(TripContext);
-  if (!ctx) throw new Error('useTrip must be used within TripProvider');
-  return ctx;
+  const ctx = useContext(TripContext)
+  if (!ctx) throw new Error('useTrip must be used within a TripProvider')
+  return ctx
 }

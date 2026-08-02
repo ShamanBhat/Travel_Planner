@@ -1,170 +1,133 @@
-# Travel Planner
+# TrailPlan — Group Trip Planner
 
-A full-stack, mobile-responsive web app for trip planning with day-wise itineraries, dual packing lists, group expense splitting, flight logistics with boarding pass scanning, weather forecasts, and offline trail maps.
+A mobile-first, offline-capable trip planning app built with React (Vite), Tailwind CSS,
+Firebase (Auth + Firestore + Storage), and the free Open-Meteo weather/geocoding API.
 
-## Tech Stack
+## ✨ Features
 
-- **React** (Vite) + JavaScript
-- **Tailwind CSS** + Lucide Icons
-- **Firebase** v10+ (Auth, Firestore, Storage) with offline persistence
-- **Open-Meteo API** for weather forecasts
+- Email/Password + Google Auth with role-based access control (Admin / Editor / Viewer)
+- 6-character trip codes for join requests, plus direct email invitations
+- Trip overview with live countdown, 14-day weather forecast, and print/PDF export
+- Group Logistics Hub: master flight/train/stay/cab entries, per-passenger seat &
+  boarding pass uploads, and a full-screen "My Boarding Pass" quick-scan overlay
+- Day-wise itinerary with inline edit
+- Dual packing lists: shared (admin/editor managed) + personal (private per user),
+  with one-click batch import from shared → personal
+- Group expense splitter with equal-split "who owes whom" settlement calculator,
+  plus private personal expenses
+- Offline trail links (GPX / custom map) + GPS pin drops (campsite, water, trailhead...)
+- Three themes: Light, Dark, and Outdoor/Trek (earth tones + sage green)
+- Firestore offline persistence for viewing/editing trip data with no signal
 
-## Features
-
-- Email/Password + Google authentication with RBAC (Admin, Editor, Viewer)
-- Trip join via 6-character code with admin approval
-- Live countdown timer with trip status (Upcoming / In Progress / Completed)
-- Read-only by default UI with explicit Edit modals
-- Group flight logistics with per-traveler seat numbers and boarding pass uploads
-- Full-screen "My Boarding Pass" scanner overlay
-- Day-wise itinerary timeline
-- Shared + personal packing lists with batch import
-- Shared expense pool with equal-split calculator and settlement summary
-- 14-day weather widget (forecast or historical)
-- Trail maps with GPX links, map embeds, and GPS pin drops
-- Dark, Light, and Outdoor/Trek themes
-
-## Project Structure
+## 📁 Project structure
 
 ```
-travel_planner/
-├── index.html
-├── package.json
-├── vite.config.js
-├── tailwind.config.js
-├── postcss.config.js
-├── eslint.config.js
-├── .env.example
-├── public/
-│   └── vite.svg
-└── src/
-    ├── main.jsx
-    ├── App.jsx
-    ├── index.css
-    ├── firebase.js
-    ├── context/
-    │   ├── AuthContext.jsx
-    │   ├── ThemeContext.jsx
-    │   └── TripContext.jsx
-    ├── hooks/
-    │   ├── useFirestoreDoc.js
-    │   └── useFirestoreCollection.js
-    ├── utils/
-    │   ├── dates.js
-    │   ├── expenses.js
-    │   └── roles.js
-    ├── components/
-    │   ├── layout/
-    │   │   ├── Header.jsx
-    │   │   └── CountdownTimer.jsx
-    │   ├── ui/
-    │   │   ├── Modal.jsx
-    │   │   └── ReadOnlyField.jsx
-    │   ├── Logistics.jsx
-    │   ├── Itinerary.jsx
-    │   ├── PackingList.jsx
-    │   ├── ExpenseTracker.jsx
-    │   ├── WeatherWidget.jsx
-    │   └── MapHub.jsx
-    └── pages/
-        ├── LoginPage.jsx
-        ├── TripSelectPage.jsx
-        ├── TripDashboard.jsx
-        └── MembersModal.jsx
+planner/
+├─ firebase.json / firestore.rules / firestore.indexes.json / storage.rules / .firebaserc
+├─ index.html
+├─ src/
+│  ├─ firebase.js                # Firebase App/Auth/Firestore/Storage init
+│  ├─ main.jsx / App.jsx / index.css
+│  ├─ context/                   # AuthContext, ThemeContext, TripContext
+│  ├─ hooks/                     # useCountdown, useWeather
+│  ├─ utils/                     # rbac, split (settlement math), weather, storage, tripCode
+│  └─ components/
+│     ├─ auth/                   # LoginPage, SignupPage
+│     ├─ dashboard/               # Dashboard, CreateTripModal, JoinTripModal
+│     ├─ layout/                  # NavBar, TripTabs, ProtectedRoute
+│     ├─ trip/                    # TripLayout, TripOverview, MembersPanel, Countdown, Weather
+│     ├─ logistics/                # LogisticsHub, FlightCard, FlightEditModal, MyBoardingPassModal
+│     ├─ itinerary/                # Itinerary, DayCard, ItineraryItem
+│     ├─ packing/                  # PackingLists, SharedPackingList, PersonalPackingList
+│     ├─ expenses/                 # ExpenseTracker, AddExpenseModal, ExpenseList, SettlementSummary
+│     ├─ maps/                     # TrailMaps, PinList, AddPinModal
+│     └─ common/                   # Modal, RoleBadge, EmptyState, ConfirmDialog
 ```
 
-## Setup
+## 🚀 Getting started
 
-1. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-2. **Configure Firebase**
-
-   Copy `.env.example` to `.env` and fill in your Firebase project credentials:
-
-   ```bash
-   cp .env.example .env
-   ```
-
-3. **Firebase Console setup**
-
-   - Enable **Email/Password** and **Google** authentication
-   - Create a **Firestore** database
-   - Create a **Storage** bucket
-   - Set Firestore security rules (example below)
-   - Set Storage security rules (example below)
-
-4. **Run dev server**
-
-   ```bash
-   npm run dev
-   ```
-
-## Firestore Security Rules (starter)
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    function isMember(tripId) {
-      return request.auth != null
-        && get(/databases/$(database)/documents/trips/$(tripId)).data.members[request.auth.uid].status == 'approved';
-    }
-    function isEditor(tripId) {
-      let role = get(/databases/$(database)/documents/trips/$(tripId)).data.members[request.auth.uid].role;
-      return isMember(tripId) && (role == 'admin' || role == 'editor');
-    }
-
-    match /users/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == uid;
-    }
-    match /trips/{tripId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
-      allow update: if isEditor(tripId) || (
-        request.auth != null &&
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members'])
-      );
-      match /{subcollection}/{docId} {
-        allow read: if isMember(tripId);
-        allow write: if isEditor(tripId);
-      }
-      match /personalPacking/{uid} {
-        allow read, write: if isMember(tripId) && request.auth.uid == uid;
-      }
-      match /expenses/{expenseId} {
-        allow read: if isMember(tripId);
-        allow create: if isMember(tripId);
-        allow update, delete: if isMember(tripId) && (
-          resource.data.paidByUid == request.auth.uid || isEditor(tripId)
-        );
-      }
-    }
-  }
-}
-```
-
-## Storage Rules (starter)
-
-```javascript
-rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    match /trips/{tripId}/boarding-passes/{allPaths=**} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null;
-    }
-  }
-}
-```
-
-## Build
+This environment did not have Node.js/npm installed, so dependencies have not been
+installed and the dev server has not been run. To get started on a machine with
+Node.js 18+ installed:
 
 ```bash
-npm run build
-npm run preview
+npm install
+cp .env.example .env   # then fill in your Firebase project config
+npm run dev
 ```
+
+### Firebase project setup
+
+1. Create a project at https://console.firebase.google.com
+2. Enable **Authentication** → Email/Password and Google sign-in providers.
+3. Enable **Firestore Database** (production mode) and **Storage**.
+4. Copy your web app config into `.env` (see `.env.example`).
+5. Deploy security rules (requires the [Firebase CLI](https://firebase.google.com/docs/cli)):
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   firebase use --add          # select/link your project, update .firebaserc
+   firebase deploy --only firestore:rules,storage:rules
+   ```
+6. Build and deploy hosting:
+   ```bash
+   npm run build
+   firebase deploy --only hosting
+   ```
+
+## 🗄️ Firestore data model
+
+```
+users/{uid}                              { uid, email, displayName, photoURL }
+invites/{inviteId}                       { tripId, tripName, email, role, status, invitedBy }
+trips/{tripId}                           { tripName, destination, destCoords, tripCode,
+                                            createdBy, startDate, endDate, coverPhotoUrl,
+                                            members: { [uid]: { role, status, displayName,
+                                                                 email, photoURL, joinedAt } } }
+trips/{tripId}/logistics/main            { items: [{ id, type, provider, flightNo, pnr,
+                                             fromLabel, toLabel, terminalFrom, terminalTo,
+                                             departureTime, arrivalTime, notes,
+                                             passengers: [{ uid, seatNo, boardingPassUrl }] }] }
+trips/{tripId}/maps/main                 { gpxUrl, customMapUrl,
+                                            pins: [{ id, name, category, latitude, longitude, notes }] }
+trips/{tripId}/itinerary/{yyyy-MM-dd}    { dayDate, items: [{ id, time, title, description,
+                                                               location, createdBy }] }
+trips/{tripId}/sharedPacking/main        { items: [{ id, item, category, assignedToUid }] }
+trips/{tripId}/personalPacking/{uid}     { items: [{ id, item, category, isPacked,
+                                                       importedFromShared }] }
+trips/{tripId}/expenses/{expenseId}      { type: 'shared'|'personal', amount, paidByUid,
+                                            description, date, visibilityUid }
+```
+
+Storage layout: `trips/{tripId}/cover/*` (cover photos) and
+`trips/{tripId}/boardingPasses/{uid}/*` (per-passenger boarding pass files).
+
+### Notes on the schema vs. the original spec
+
+- Logistics/Maps/SharedPacking are stored as a **single document named `main`**
+  inside their respective subcollections (rather than a bare subcollection doc),
+  so paths stay tidy while still bundling all items into one document/read/write.
+- Email invitations use a small top-level `invites` collection (instead of an
+  array field on the trip doc) so they can be securely queried by the invited
+  user's own email via Firestore rules, without needing a Cloud Function.
+
+## 🔐 Roles
+
+| Action | Admin | Editor | Viewer |
+| --- | --- | --- | --- |
+| Approve/reject join requests, invite by email, manage roles, delete trip | ✅ | ❌ | ❌ |
+| Edit trip name/destination/dates/cover photo | ✅ | ❌ | ❌ |
+| Edit logistics, itinerary, shared packing, map pins, shared expenses | ✅ | ✅ | ❌ |
+| View own boarding pass, manage own personal packing list & expenses | ✅ | ✅ | ✅ |
+
+## 💸 Firebase Spark (free tier) cost optimizations
+
+- Logistics, map pins, and shared packing items are bundled as arrays inside a
+  single document per module instead of one document per item.
+- Itinerary bundles all of a day's activities into one document per day.
+- `onSnapshot` listeners are only attached while their tab is mounted (each
+  route component subscribes in `useEffect` and unsubscribes on unmount).
+- Multi-tab IndexedDB persistence (`enableMultiTabIndexedDbPersistence`) caches
+  reads locally, so repeated views of the same trip do not re-bill reads.
+- Edits use `setDoc(..., { merge: true })` / `updateDoc` with dot-path field
+  updates (e.g. `members.{uid}.role`) instead of rewriting whole documents.

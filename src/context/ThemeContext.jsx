@@ -1,54 +1,49 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+// src/context/ThemeContext.jsx
+import React, { createContext, useContext, useEffect, useState } from 'react'
 
-const THEMES = ['light', 'dark', 'outdoor'];
+export const THEMES = {
+  LIGHT: 'light',
+  DARK: 'dark',
+  TREK: 'trek',
+}
 
-const ThemeContext = createContext(null);
+const STORAGE_KEY = 'trailplan.theme'
+const ThemeContext = createContext(null)
+
+function getInitialTheme() {
+  if (typeof window === 'undefined') return THEMES.LIGHT
+  const saved = window.localStorage.getItem(STORAGE_KEY)
+  if (saved && Object.values(THEMES).includes(saved)) return saved
+  const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches
+  return prefersDark ? THEMES.DARK : THEMES.LIGHT
+}
 
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('travel-planner-theme');
-    return THEMES.includes(saved) ? saved : 'light';
-  });
+  const [theme, setTheme] = useState(getInitialTheme)
 
   useEffect(() => {
-    localStorage.setItem('travel-planner-theme', theme);
-    document.body.classList.remove('theme-light', 'theme-dark', 'theme-outdoor');
-    document.body.classList.add(`theme-${theme}`);
+    document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.classList.toggle('dark', theme === THEMES.DARK)
+    window.localStorage.setItem(STORAGE_KEY, theme)
+  }, [theme])
 
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    const metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) {
-      metaTheme.content = theme === 'dark' ? '#0f172a' : theme === 'outdoor' ? '#F5F0E8' : '#f8fafc';
-    }
-  }, [theme]);
-
-  const cycleTheme = () => {
-    setTheme((prev) => {
-      const idx = THEMES.indexOf(prev);
-      return THEMES[(idx + 1) % THEMES.length];
-    });
-  };
-
-  const themeLabel = {
-    light: 'Light',
-    dark: 'Dark',
-    outdoor: 'Outdoor',
-  };
+  function cycleTheme() {
+    setTheme((t) => {
+      if (t === THEMES.LIGHT) return THEMES.DARK
+      if (t === THEMES.DARK) return THEMES.TREK
+      return THEMES.LIGHT
+    })
+  }
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, cycleTheme, themeLabel }}>
+    <ThemeContext.Provider value={{ theme, setTheme, cycleTheme }}>
       {children}
     </ThemeContext.Provider>
-  );
+  )
 }
 
 export function useTheme() {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
-  return ctx;
+  const ctx = useContext(ThemeContext)
+  if (!ctx) throw new Error('useTheme must be used within a ThemeProvider')
+  return ctx
 }

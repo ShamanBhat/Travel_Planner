@@ -1,74 +1,78 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+// src/context/AuthContext.jsx
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import {
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   signInWithPopup,
   signOut,
+  onAuthStateChanged,
   updateProfile,
-} from 'firebase/auth';
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { auth, db, googleProvider } from '../firebase';
+} from 'firebase/auth'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { auth, googleProvider, db } from '../firebase'
 
-const AuthContext = createContext(null);
-
-async function upsertUserProfile(user) {
-  const userRef = doc(db, 'users', user.uid);
-  const snap = await getDoc(userRef);
-  if (!snap.exists()) {
-    await setDoc(userRef, {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName || user.email?.split('@')[0] || 'Traveler',
-      photoURL: user.photoURL || null,
-      createdAt: new Date().toISOString(),
-    });
-  }
-}
+const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        await upsertUserProfile(firebaseUser);
-      }
-      setUser(firebaseUser);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user)
+      setAuthLoading(false)
+    })
+    return unsubscribe
+  }, [])
 
-  const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
+  // Upsert a lightweight user profile doc, used for lookups / denormalized display data.
+  async function upsertUserDoc(user) {
+    if (!user) return
+    await setDoc(
+      doc(db, 'users', user.uid),
+      {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName || user.email?.split('@')[0] || 'Traveler',
+        photoURL: user.photoURL || null,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    )
+  }
 
-  const register = async (email, password, displayName) => {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+  async function signup(email, password, displayName) {
+    const cred = await createUserWithEmailAndPassword(auth, email, password)
     if (displayName) {
-      await updateProfile(cred.user, { displayName });
+      await updateProfile(cred.user, { displayName })
     }
-    await upsertUserProfile(cred.user);
-    return cred;
-  };
+    await upsertUserDoc({ ...cred.user, displayName: displayName || cred.user.displayName })
+    return cred.user
+  }
 
-  const loginWithGoogle = async () => {
-    const cred = await signInWithPopup(auth, googleProvider);
-    await upsertUserProfile(cred.user);
-    return cred;
-  };
+  async function login(email, password) {
+    const cred = await signInWithEmailAndPassword(auth, email, password)
+    await upsertUserDoc(cred.user)
+    return cred.user
+  }
 
-  const logout = () => signOut(auth);
+  async function loginWithGoogle() {
+    const cred = await signInWithPopup(auth, googleProvider)
+    await upsertUserDoc(cred.user)
+    return cred.user
+  }
 
-  return (
-    <AuthContext.Provider value={{ user, loading, login, register, loginWithGoogle, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  function logout() {
+    return signOut(auth)
+  }
+
+  const value = { currentUser, authLoading, signup, login, loginWithGoogle, logout }
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider')
+  return ctx
 }
