@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root,
+[data-theme='light'] {
+  --color-bg: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-alt: #f1f5f9;
+  --color-border: #e2e8f0;
+  --color-text: #0f172a;
+  --color-muted: #64748b;
+  --color-primary: #2563eb;
+  --color-primary-text: #ffffff;
+  --color-accent: #0ea5e9;
+  --color-danger: #dc2626;
+  --color-warn: #d97706;
+}
+
+[data-theme='dark'] {
+  --color-bg: #0b1220;
+  --color-surface: #111827;
+  --color-surface-alt: #1c2534;
+  --color-border: #2b3646;
+  --color-text: #e5e7eb;
+  --color-muted: #94a3b8;
+  --color-primary: #3b82f6;
+  --color-primary-text: #ffffff;
+  --color-accent: #38bdf8;
+  --color-danger: #f87171;
+  --color-warn: #fbbf24;
+}
+
+/* Outdoor / Trek mode: earth tones, slate gray, sage green */
+[data-theme='trek'] {
+  --color-bg: #f3efe1;
+  --color-surface: #ece2c8;
+  --color-surface-alt: #e1d3ac;
+  --color-border: #c3b48c;
+  --color-text: #332a1c;
+  --color-muted: #6d5f45;
+  --color-primary: #4b5d3a;
+  --color-primary-text: #f3efe1;
+  --color-accent: #6b8f71;
+  --color-danger: #a13d2e;
+  --color-warn: #b3792b;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Thin, theme-aware scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-border);
+  border-radius: 9999px;
+}
+
+/* Print layout for the Trip Overview PDF/print export */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .print-page {
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+}
+
+.print-only {
+  display: none;
+}
